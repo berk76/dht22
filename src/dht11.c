@@ -16,15 +16,7 @@
 
 static const int gpio_dht11 = 22;	/* GPIO pin */
 static jmp_buf timeout_exit;		/* longjmp on timeout */
-static int is_signaled = 0;		/* Exit program if signaled */
 
-/*
- * Signal handler to quit the program :
- */
-static void
-sigint_handler(int signo) {
-	is_signaled = 1;		/* Signal to exit program */
-}
 
 /*
  * Read the GPIO line status :
@@ -136,15 +128,11 @@ main(int argc,char **argv) {
 	int errors = 0, timeouts = 0, readings = 0;
 	unsigned wait;
 
-	signal(SIGINT,sigint_handler);		/* Trap on SIGINT */
-
 	gpio_init();    			/* Initialize GPIO access */
 	gpio_config(gpio_dht11,Input);		/* Set GPIO pin as Input */
 
 	for (;;) {
 		if ( setjmp(timeout_exit) ) {	/* Timeouts go here */
-			if ( is_signaled )	/* SIGINT? */
-				break;		/* Yes, then exit loop */
 			fprintf(stderr,"(Timeout # %d)\n",++timeouts);
 			wait = 5;
 		} else	wait = 2;
@@ -161,16 +149,16 @@ main(int argc,char **argv) {
 		wait_until_low();		/* Wait for low signal */
 		wait_until_high();		/* Wait for return to high */
 
-		if ( rsensor(&relhumidity,&celsius) )
+		if ( rsensor(&relhumidity,&celsius) ) {
 			printf("RH %.02f%% Temp %.02f C Reading %d\n",relhumidity,celsius,++readings);
-		else	fprintf(stderr,"(Error # %d)\n",++errors);
+                        break;
+                } else {
+                        fprintf(stderr,"(Error # %d)\n",++errors);
+                }
 	}
 
 	gpio_config(gpio_dht11,Input);		/* Set pin to input mode */
 
-	puts("\nProgram exited due to SIGINT:\n");
-	printf("Last Read: RH %.02f%% Temp %.02f C, %d errors, %d timeouts, %d readings\n",
-		relhumidity,celsius,errors,timeouts,readings);
 	return 0;
 }
 

@@ -35,7 +35,7 @@ wait_until_low(void) {
 	unsigned count = 0;
 
 	while ( gread() )
-		if ( ++count >= maxcount || is_signaled )
+		if ( ++count >= maxcount )
 			longjmp(timeout_exit,1);
 	return count;
 }
@@ -125,7 +125,7 @@ rsensor(float *relhumidity,float *celsius) {
 int
 main(int argc,char **argv) {
 	float relhumidity = 0, celsius = 0;
-	int errors = 0, timeouts = 0, readings = 0;
+	int errors = 0, timeouts = 0;
 	unsigned wait;
 
 	gpio_init();    			/* Initialize GPIO access */
@@ -150,7 +150,7 @@ main(int argc,char **argv) {
 		wait_until_high();		/* Wait for return to high */
 
 		if ( rsensor(&relhumidity,&celsius) ) {
-			printf("RH %.02f%% Temp %.02f C Reading %d\n",relhumidity,celsius,++readings);
+			printf("RH %.02f%% Temp %.02f C\n",relhumidity,celsius);
                         break;
                 } else {
                         fprintf(stderr,"(Error # %d)\n",++errors);

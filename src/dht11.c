@@ -97,7 +97,7 @@ rbyte(void) {
  * error.
  */
 static int
-rsensor(int *relhumidity,int *celsius) {
+rsensor(float *relhumidity,float *celsius) {
 	unsigned char u[5], cs = 0, x;
 
 	for ( x=0; x<5; ++x ) {
@@ -107,8 +107,21 @@ rsensor(int *relhumidity,int *celsius) {
 	}
 
 	if ( (cs & 0xFF)  == u[4] ) {
-		*relhumidity = (int)u[0];
-		*celsius   = (int)u[2];
+
+                *relhumidity =  (float)((u[0] << 8) + u[1]) / 10;
+                if ( *relhumidity > 100 ) {
+		        *relhumidity = (int)u[0];
+                }
+
+                *celsius = (float)(((u[2] & 0x7F) << 8) + u[3]) / 10;
+                if ( *celsius > 125 ) {
+		        *celsius   = (int)u[2];
+                }
+
+                if ( u[2] & 0x80 ) {
+                        *celsius = - *celsius;
+                }
+
 		return 1;
 	}
 	return 0;
@@ -119,7 +132,7 @@ rsensor(int *relhumidity,int *celsius) {
  */
 int
 main(int argc,char **argv) {
-	int relhumidity = 0, celsius = 0;
+	float relhumidity = 0, celsius = 0;
 	int errors = 0, timeouts = 0, readings = 0;
 	unsigned wait;
 
@@ -149,14 +162,14 @@ main(int argc,char **argv) {
 		wait_until_high();		/* Wait for return to high */
 
 		if ( rsensor(&relhumidity,&celsius) )
-			printf("RH %d%% Temp %d C Reading %d\n",relhumidity,celsius,++readings);
+			printf("RH %.02f%% Temp %.02f C Reading %d\n",relhumidity,celsius,++readings);
 		else	fprintf(stderr,"(Error # %d)\n",++errors);
 	}
 
 	gpio_config(gpio_dht11,Input);		/* Set pin to input mode */
 
 	puts("\nProgram exited due to SIGINT:\n");
-	printf("Last Read: RH %d%% Temp %d C, %d errors, %d timeouts, %d readings\n",
+	printf("Last Read: RH %.02f%% Temp %.02f C, %d errors, %d timeouts, %d readings\n",
 		relhumidity,celsius,errors,timeouts,readings);
 	return 0;
 }

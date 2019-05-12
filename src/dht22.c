@@ -1,5 +1,5 @@
 /*********************************************************************
- * dht11.c : Direct GPIO access reading DHT11 humidity and temp sensor.
+ * dht22.c : Direct GPIO access reading DHT22 humidity and temp sensor.
  *********************************************************************/
 
 #include <stdio.h>
